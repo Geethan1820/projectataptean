@@ -96,6 +96,81 @@ export async function addTransaction(transactionData: Omit<Transaction, 'id' | '
   return { updatedItem: currentItem, transaction: newTransaction };
 }
 
+export async function addBatchTransactions(
+  operations: {
+    sku: string;
+    update?: Partial<Omit<InventoryItem, 'sku' | 'createdAt'>>;
+    transaction?: Omit<Transaction, 'id' | 'timestamp' | 'sku'>;
+  }[]
+): Promise<{ success: boolean; message: string }> {
+  // This is a simulation of a transactional batch operation.
+  // 1. Create snapshots of the data.
+  const originalInventory = JSON.parse(JSON.stringify(inventory));
+  const originalTransactions = JSON.parse(JSON.stringify(transactions));
+
+  try {
+    // 2. Try to apply all operations to a temporary copy.
+    const tempInventory = JSON.parse(JSON.stringify(inventory));
+    const tempTransactions = JSON.parse(JSON.stringify(transactions));
+    let tempTransactionId = nextTransactionId;
+
+    for (const op of operations) {
+      const itemIndex = tempInventory.findIndex(item => item.sku === op.sku);
+      if (itemIndex === -1) {
+        throw new Error(`Item with SKU ${op.sku} not found.`);
+      }
+
+      // Apply item details update
+      if (op.update) {
+        tempInventory[itemIndex] = { ...tempInventory[itemIndex], ...op.update };
+      }
+
+      // Apply transaction
+      if (op.transaction) {
+        const currentItem = tempInventory[itemIndex];
+        if (op.transaction.type === 'OUT') {
+          if (currentItem.quantity < op.transaction.quantity) {
+            throw new Error(`Insufficient stock for ${op.sku}. Required: ${op.transaction.quantity}, Available: ${currentItem.quantity}`);
+          }
+          currentItem.quantity -= op.transaction.quantity;
+        } else {
+          currentItem.quantity += op.transaction.quantity;
+        }
+
+        const newTransaction: Transaction = {
+          ...op.transaction,
+          sku: op.sku,
+          id: tempTransactionId++,
+          timestamp: new Date().toISOString(),
+        };
+        tempTransactions.unshift(newTransaction);
+        tempInventory[itemIndex] = currentItem;
+      }
+    }
+
+    // 3. If all operations succeed, commit the changes to the actual data store.
+    inventory = tempInventory;
+    transactions = tempTransactions;
+    nextTransactionId = tempTransactionId;
+
+    revalidatePath('/');
+    revalidatePath('/transactions');
+    revalidatePath('/analytics');
+
+    return { success: true, message: 'Batch operations completed successfully.' };
+
+  } catch (error: any) { {
+    // 4. If any operation fails, the 'temp' data is discarded and no changes are made.
+    // The original data remains untouched.
+    console.error("Batch transaction failed, rolling back.", error.message);
+    // Restore from snapshot (though in this simple memory store, we just don't commit the temp data)
+    inventory = originalInventory;
+    transactions = originalTransactions;
+    return { success: false, message: `Transaction failed: ${error.message}` };
+  }
+}
+}
+
 export async function generateSku(input: { size: InventorySize; color: string }) {
   const result = await generateSkuAI(input);
   return result.sku;

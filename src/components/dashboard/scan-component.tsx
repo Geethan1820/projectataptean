@@ -27,7 +27,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { addInventoryItem, updateInventoryItem, getInventoryItems } from '@/app/actions';
+import { addInventoryItem, addBatchTransactions, getInventoryItems } from '@/app/actions';
 import type { InventoryItem } from '@/lib/types';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
@@ -157,23 +157,53 @@ export default function ScanComponent() {
     startTransition(async () => {
       try {
         if(existingItem) {
-          await updateInventoryItem(values.sku, {
-            price: values.price,
-            color: values.color,
-            quantity: values.quantity
-          });
-           toast({
-            title: 'Success!',
-            description: `Item ${values.sku} has been updated.`,
-          });
+           const operations = [];
+
+            // Check if item details changed
+            if (values.price !== existingItem.price || values.color !== existingItem.color) {
+              operations.push({
+                sku: values.sku,
+                update: { price: values.price, color: values.color },
+              });
+            }
+
+            // Check if quantity changed
+            const quantityChange = values.quantity - existingItem.quantity;
+            if (quantityChange !== 0) {
+              operations.push({
+                sku: values.sku,
+                transaction: {
+                  type: quantityChange > 0 ? 'IN' : 'OUT',
+                  quantity: Math.abs(quantityChange),
+                },
+              });
+            }
+
+            if(operations.length > 0) {
+              const result = await addBatchTransactions(operations);
+              if (result.success) {
+                toast({
+                  title: 'Success!',
+                  description: `Item ${values.sku} has been updated.`,
+                });
+                router.push('/');
+              } else {
+                throw new Error(result.message);
+              }
+            } else {
+               toast({
+                  title: 'No Changes Detected',
+                  description: 'The item details and quantity are the same.',
+                });
+            }
         } else {
           await addInventoryItem(values);
           toast({
             title: 'Success!',
             description: `New item ${values.sku} has been added.`,
           });
+          router.push('/');
         }
-        router.push('/');
       } catch (error: any) {
         toast({
           variant: 'destructive',
@@ -262,7 +292,7 @@ export default function ScanComponent() {
                         <FormItem>
                         <FormLabel>Color</FormLabel>
                         <FormControl>
-                            <Input placeholder="e.g., Blue" {...field} readOnly={!!existingItem} />
+                            <Input placeholder="e.g., Blue" {...field} />
                         </FormControl>
                         <FormMessage />
                         </FormItem>
