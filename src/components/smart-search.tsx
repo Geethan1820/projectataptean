@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { useState, useTransition, useRef, useEffect, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
 import { getSearchSuggestions } from '@/app/actions';
-import { cn } from '@/lib/utils';
 import { useDebounce } from '@/hooks/use-debounce';
 
 export function SmartSearch() {
