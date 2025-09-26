@@ -171,7 +171,7 @@ export async function addBatchTransactions(
 }
 }
 
-export async function generateSku(input: { size: InventorySize; color: string }) {
+export async function generateSku(input: { size: InventorySize; color: string; existingSkus: string[] }) {
   const result = await generateSkuAI(input);
   return result.sku;
 }

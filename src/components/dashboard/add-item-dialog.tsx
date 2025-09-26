@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { PlusCircle, Loader2, Sparkles } from 'lucide-react';
+import { PlusCircle, Loader2, Sparkles, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -15,6 +15,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -32,7 +42,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { addInventoryItem, generateSku } from '@/app/actions';
+import { addInventoryItem, generateSku, getInventoryItems } from '@/app/actions';
 import type { InventorySize } from '@/lib/types';
 
 const formSchema = z.object({
@@ -47,6 +57,7 @@ export default function AddItemDialog() {
   const [isOpen, setIsOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [isGeneratingSku, startSkuGeneration] = useTransition();
+  const [skuSuggestion, setSkuSuggestion] = useState<string | null>(null);
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -74,7 +85,9 @@ export default function AddItemDialog() {
     }
     startSkuGeneration(async () => {
       try {
-        const newSku = await generateSku({ size: size as InventorySize, color });
+        const existingItems = await getInventoryItems();
+        const existingSkus = existingItems.map(item => item.sku);
+        const newSku = await generateSku({ size: size as InventorySize, color, existingSkus });
         form.setValue('sku', newSku, { shouldValidate: true });
         toast({
           title: 'SKU Generated!',
@@ -101,16 +114,31 @@ export default function AddItemDialog() {
         form.reset();
         setIsOpen(false);
       } catch (error: any) {
-        toast({
-          variant: 'destructive',
-          title: 'Failed to Add Item',
-          description: error.message || 'An unexpected error occurred.',
-        });
+        if (error.message.includes('SKU already exists')) {
+          const existingItems = await getInventoryItems();
+          const existingSkus = existingItems.map(item => item.sku);
+          const newSku = await generateSku({ size: values.size as InventorySize, color: values.color, existingSkus });
+          setSkuSuggestion(newSku);
+        } else {
+          toast({
+            variant: 'destructive',
+            title: 'Failed to Add Item',
+            description: error.message || 'An unexpected error occurred.',
+          });
+        }
       }
     });
   };
 
+  const handleUseSuggestion = () => {
+      if (skuSuggestion) {
+          form.setValue('sku', skuSuggestion);
+          setSkuSuggestion(null);
+      }
+  };
+
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button>
@@ -224,5 +252,28 @@ export default function AddItemDialog() {
         </Form>
       </DialogContent>
     </Dialog>
+
+    <AlertDialog open={!!skuSuggestion} onOpenChange={() => setSkuSuggestion(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle className="flex items-center gap-2">
+                    <AlertTriangle className="text-amber-500" />
+                    Duplicate SKU Detected
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                    The SKU <span className="font-mono bg-muted p-1 rounded">{form.getValues('sku')}</span> already exists. The AI suggests using the following SKU instead:
+                    <br />
+                    <strong className="font-mono bg-muted p-1 rounded my-2 inline-block">{skuSuggestion}</strong>
+                    <br />
+                    Would you like to use this suggestion?
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Let me fix it</AlertDialogCancel>
+                <AlertDialogAction onClick={handleUseSuggestion}>Use Suggestion</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }
