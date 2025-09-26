@@ -1,4 +1,4 @@
-import { Package, QrCode } from 'lucide-react';
+import { Package, QrCode, BarChart2 } from 'lucide-react';
 import { SmartSearch } from '@/components/smart-search';
 import { ThemeToggle } from '@/components/theme-toggle';
 import AddItemDialog from '../dashboard/add-item-dialog';
@@ -22,6 +22,12 @@ export default function Header() {
             <SmartSearch />
           </div>
           <nav className="flex items-center gap-2">
+            <Button asChild variant="outline">
+                <Link href="/analytics">
+                    <BarChart2 className="mr-2 h-4 w-4" />
+                    Analytics
+                </Link>
+            </Button>
             <Button asChild variant="outline">
                 <Link href="/scan">
                     <QrCode className="mr-2 h-4 w-4" />
