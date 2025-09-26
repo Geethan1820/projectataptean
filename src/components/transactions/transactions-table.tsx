@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import type { Transaction } from '@/lib/types';
-import { format } from 'date-fns';
+import FormattedDate from '@/components/formatted-date';
 
 export default function TransactionsTable({ transactions }: { transactions: Transaction[] }) {
   return (
@@ -51,7 +51,9 @@ export default function TransactionsTable({ transactions }: { transactions: Tran
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">{transaction.quantity}</TableCell>
-                    <TableCell>{format(new Date(transaction.timestamp), "PPP p")}</TableCell>
+                    <TableCell>
+                        <FormattedDate dateString={transaction.timestamp} />
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
