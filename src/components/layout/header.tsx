@@ -1,7 +1,9 @@
-import { Package } from 'lucide-react';
+import { Package, QrCode } from 'lucide-react';
 import { SmartSearch } from '@/components/smart-search';
 import { ThemeToggle } from '@/components/theme-toggle';
 import AddItemDialog from '../dashboard/add-item-dialog';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 export default function Header() {
   return (
@@ -20,6 +22,12 @@ export default function Header() {
             <SmartSearch />
           </div>
           <nav className="flex items-center gap-2">
+            <Button asChild variant="outline">
+                <Link href="/scan">
+                    <QrCode className="mr-2 h-4 w-4" />
+                    Scan Item
+                </Link>
+            </Button>
             <AddItemDialog />
             <ThemeToggle />
           </nav>
