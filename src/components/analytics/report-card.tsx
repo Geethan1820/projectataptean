@@ -15,7 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import type { BIReport } from '@/ai/flows/bi-report-generator';
+import type { BIReport } from '@/lib/types';
 
 interface ReportCardProps {
   title: string;

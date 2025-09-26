@@ -11,28 +11,8 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import type { InventoryItem, Transaction } from '@/lib/types';
-
-const ReportDataSchema = z.object({
-  sku: z.string(),
-  quantity: z.number().optional(),
-  totalSold: z.number().optional(),
-});
-
-export const BIReportSchema = z.object({
-  reportType: z
-    .enum(['topMovers', 'lowStock'])
-    .describe('The type of the generated report.'),
-  data: z
-    .array(ReportDataSchema)
-    .describe('The structured data for the report.'),
-  analysis: z
-    .string()
-    .describe(
-      'A natural language analysis of the report, including insights and recommendations.'
-    ),
-});
-export type BIReport = z.infer<typeof BIReportSchema>;
+import type { InventoryItem, Transaction, BIReport } from '@/lib/types';
+import { BIReportSchema } from '@/lib/types';
 
 const BIReportInputSchema = z.object({
   reportType: z.enum(['topMovers', 'lowStock']),
