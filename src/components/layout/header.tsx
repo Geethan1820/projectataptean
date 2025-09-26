@@ -1,4 +1,4 @@
-import { Package, QrCode, BarChart2 } from 'lucide-react';
+import { Package, QrCode, BarChart2, History } from 'lucide-react';
 import { SmartSearch } from '@/components/smart-search';
 import { ThemeToggle } from '@/components/theme-toggle';
 import AddItemDialog from '../dashboard/add-item-dialog';
@@ -26,6 +26,12 @@ export default function Header() {
                 <Link href="/analytics">
                     <BarChart2 className="mr-2 h-4 w-4" />
                     Analytics
+                </Link>
+            </Button>
+            <Button asChild variant="outline">
+                <Link href="/transactions">
+                    <History className="mr-2 h-4 w-4" />
+                    Transactions
                 </Link>
             </Button>
             <Button asChild variant="outline">

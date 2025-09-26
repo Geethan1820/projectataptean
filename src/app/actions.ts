@@ -17,6 +17,12 @@ export async function getInventoryItems(): Promise<InventoryItem[]> {
   return JSON.parse(JSON.stringify(inventory));
 }
 
+export async function getTransactions(): Promise<Transaction[]> {
+    // Simulate async operation
+    await new Promise(resolve => setTimeout(resolve, 500));
+    return JSON.parse(JSON.stringify(transactions));
+}
+
 export async function addInventoryItem(itemData: Omit<InventoryItem, 'createdAt'>) {
   if (inventory.some(item => item.sku === itemData.sku)) {
     throw new Error('SKU already exists.');
@@ -38,8 +44,9 @@ export async function addInventoryItem(itemData: Omit<InventoryItem, 'createdAt'
     };
     transactions.unshift(newTransaction);
   }
-
+  
   revalidatePath('/');
+  revalidatePath('/transactions');
   return newItem;
 }
 
@@ -54,6 +61,7 @@ export async function updateInventoryItem(
 
   inventory[itemIndex] = { ...inventory[itemIndex], ...itemData };
   revalidatePath('/');
+  revalidatePath('/analytics');
   return inventory[itemIndex];
 }
 
@@ -83,6 +91,8 @@ export async function addTransaction(transactionData: Omit<Transaction, 'id' | '
   inventory[itemIndex] = currentItem;
 
   revalidatePath('/');
+  revalidatePath('/transactions');
+  revalidatePath('/analytics');
   return { updatedItem: currentItem, transaction: newTransaction };
 }
 
