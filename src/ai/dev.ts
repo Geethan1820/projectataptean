@@ -1,1 +1,5 @@
-// Flows will be imported for their side effects in this file.
+import { config } from 'dotenv';
+config();
+
+import '@/ai/flows/auto-sku-generator.ts';
+import '@/ai/flows/smart-search-fuzzy-matching.ts';
